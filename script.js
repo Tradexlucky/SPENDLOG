@@ -2,6 +2,59 @@
 //  SpendLog PWA – Mobile-First Expense + Income Tracker v2.0
 // ============================================================
 
+// ==================== MIGRATION (जुना data → नवीन format) ====================
+(function migrateOldData() {
+  try {
+    // 1. expenses मध्ये tags नसतील तर add करा
+    const rawExp = localStorage.getItem('sl_expenses');
+    if (rawExp) {
+      let exps = JSON.parse(rawExp);
+      let changed = false;
+      exps = exps.map(e => {
+        if (!e.tags) { e.tags = []; changed = true; }
+        if (!e.id)   { e.id = Date.now().toString(36) + Math.random().toString(36).slice(2,6); changed = true; }
+        return e;
+      });
+      if (changed) localStorage.setItem('sl_expenses', JSON.stringify(exps));
+    }
+
+    // 2. जुना theme 'dark'/'light' असेल तर ठेवा, नाहीतर 'auto'
+    const oldTheme = localStorage.getItem('sl_theme');
+    if (!oldTheme) localStorage.setItem('sl_theme', 'dark');
+
+    // 3. goal मधून income असेल तर profile बनवा (onboarding skip करण्यासाठी)
+    const rawGoal    = localStorage.getItem('sl_goal');
+    const rawProfile = localStorage.getItem('sl_profile');
+    const rawBudget  = localStorage.getItem('sl_budget');
+    const hasOldData = rawExp && JSON.parse(rawExp).length > 0;
+
+    if (hasOldData && !rawProfile) {
+      // जुना user आहे — profile बनवा जेणेकरून onboarding येणार नाही
+      let incomeVal = 0;
+      if (rawGoal) {
+        const g = JSON.parse(rawGoal);
+        incomeVal = g.income || 0;
+      }
+      const autoProfile = { name: 'User', income: incomeVal, migrated: true };
+      localStorage.setItem('sl_profile', JSON.stringify(autoProfile));
+    }
+
+    // 4. sl_incomes नसेल तर empty array set करा
+    if (!localStorage.getItem('sl_incomes')) {
+      localStorage.setItem('sl_incomes', '[]');
+    }
+
+    // 5. sl_customCats नसेल तर empty array set करा
+    if (!localStorage.getItem('sl_customCats')) {
+      localStorage.setItem('sl_customCats', '[]');
+    }
+
+    console.log('SpendLog: Migration complete ✅');
+  } catch(e) {
+    console.warn('SpendLog: Migration error (non-fatal)', e);
+  }
+})();
+
 // ==================== STATE ====================
 let expenses   = JSON.parse(localStorage.getItem('sl_expenses'))   || [];
 let incomes    = JSON.parse(localStorage.getItem('sl_incomes'))    || [];
@@ -158,7 +211,22 @@ function buildGreeting() {
   if (!profile) return '';
   const h = new Date().getHours();
   const g = h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening';
+  if (profile.migrated || profile.name === 'User') {
+    return `<div class="greeting">${g}! 👋 <span style="font-size:11px;color:var(--muted)">— <a href="#" onclick="openProfileEdit()" style="color:var(--accent);text-decoration:none">Set your name</a></span></div>`;
+  }
   return `<div class="greeting">${g}, <strong>${profile.name}</strong> 👋</div>`;
+}
+
+function openProfileEdit() {
+  const name = prompt('Enter your name:', profile && profile.name !== 'User' ? profile.name : '');
+  if (name && name.trim()) {
+    profile.name     = name.trim();
+    profile.migrated = false;
+    localStorage.setItem('sl_profile', JSON.stringify(profile));
+    document.getElementById('greetingRow').innerHTML = buildGreeting();
+    toast(`Welcome, ${profile.name}! 🎉`, 'success');
+  }
+  return false;
 }
 
 // ==================== THEME ====================
