@@ -38,16 +38,82 @@
     <button id="dismissInstall">✕</button>
   </div>
 
-  <!-- ===== MAIN PAGES (tab content) ===== -->
+  <!-- ===== ONBOARDING MODAL ===== -->
+  <div class="modal-overlay" id="onboardingOverlay" style="display:none">
+    <div class="modal-box onboarding-box">
+      <div class="onboard-logo">₹</div>
+      <h2 class="onboard-title">Welcome to SpendLog!</h2>
+      <p class="onboard-sub">Let's set up your profile to get started.</p>
+      <div class="form-group">
+        <label>Your Name</label>
+        <input type="text" id="onboardName" placeholder="e.g. Rahul" maxlength="30"/>
+      </div>
+      <div class="form-group">
+        <label>Monthly Income (₹)</label>
+        <input type="number" id="onboardIncome" inputmode="decimal" placeholder="e.g. 50000" min="0"/>
+      </div>
+      <div class="form-group">
+        <label>Monthly Budget (₹)</label>
+        <input type="number" id="onboardBudget" inputmode="decimal" placeholder="e.g. 30000" min="0"/>
+      </div>
+      <button class="add-btn" onclick="completeOnboarding()">🚀 Get Started</button>
+    </div>
+  </div>
+
+  <!-- ===== CUSTOM CATEGORY MODAL ===== -->
+  <div class="modal-overlay" id="catModalOverlay" style="display:none">
+    <div class="modal-box">
+      <h3 class="modal-title">➕ Add Custom Category</h3>
+      <div class="form-group">
+        <label>Category Name</label>
+        <input type="text" id="newCatName" placeholder="e.g. Gym, Petrol, Medical" maxlength="20"/>
+      </div>
+      <div class="form-group">
+        <label>Icon (Emoji)</label>
+        <input type="text" id="newCatIcon" placeholder="e.g. 💊" maxlength="2"/>
+      </div>
+      <div class="form-group">
+        <label>Color</label>
+        <input type="color" id="newCatColor" value="#4ab4f0" style="width:100%;height:44px;border-radius:12px;border:none;cursor:pointer;"/>
+      </div>
+      <div style="display:flex;gap:10px;margin-top:4px">
+        <button class="add-btn" onclick="addCustomCategory()">Add Category</button>
+        <button class="cancel-btn" onclick="closeCatModal()" style="margin-top:0">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== MAIN PAGES ===== -->
   <main class="main-content" id="mainContent">
 
     <!-- ========== PAGE: HOME ========== -->
     <section class="page active" id="pageHome">
 
+      <!-- Greeting -->
+      <div class="greeting-row" id="greetingRow"></div>
+
+      <!-- Net Balance Banner -->
+      <div class="net-balance-card" id="netBalanceCard" style="display:none">
+        <div class="nb-item">
+          <span class="nb-label">💰 Income</span>
+          <span class="nb-val income-val" id="nbIncome">₹0</span>
+        </div>
+        <div class="nb-divider"></div>
+        <div class="nb-item">
+          <span class="nb-label">💸 Spent</span>
+          <span class="nb-val expense-val" id="nbSpent">₹0</span>
+        </div>
+        <div class="nb-divider"></div>
+        <div class="nb-item">
+          <span class="nb-label">🏦 Balance</span>
+          <span class="nb-val" id="nbBalance">₹0</span>
+        </div>
+      </div>
+
       <!-- Stats -->
       <div class="stats-grid">
         <div class="stat-card accent-border">
-          <span class="stat-label">Total</span>
+          <span class="stat-label">Total Spent</span>
           <span class="stat-value" id="totalExpenses">₹0.00</span>
         </div>
         <div class="stat-card blue-border">
@@ -89,7 +155,7 @@
         ⚠️ Monthly spending exceeded your budget!
       </div>
 
-      <!-- Quick Stats: Category Breakdown -->
+      <!-- Category Breakdown -->
       <div class="card">
         <div class="card-title-row">
           <span class="card-label">Spending by Category</span>
@@ -110,6 +176,20 @@
         <p class="no-data-msg" id="chartNoData">No data yet — add some expenses!</p>
       </div>
 
+      <!-- Monthly Trend -->
+      <div class="card">
+        <div class="card-title-row">
+          <span class="card-label">📈 Monthly Trend</span>
+          <div class="chart-tab-row">
+            <button class="chart-tab active" id="tabTrendExp" onclick="switchTrend('expense')">Expense</button>
+            <button class="chart-tab" id="tabTrendInc" onclick="switchTrend('income')">Income</button>
+            <button class="chart-tab" id="tabTrendBoth" onclick="switchTrend('both')">Both</button>
+          </div>
+        </div>
+        <canvas id="trendChart" width="300" height="140"></canvas>
+        <p class="no-data-msg" id="trendNoData" style="display:none">No trend data yet!</p>
+      </div>
+
       <!-- Recurring Expenses -->
       <div class="card" id="recurringCard" style="display:none">
         <span class="card-label">🔁 Recurring Expenses</span>
@@ -121,6 +201,12 @@
     <!-- ========== PAGE: ADD ========== -->
     <section class="page" id="pageAdd">
 
+      <!-- Toggle: Expense / Income -->
+      <div class="entry-type-toggle">
+        <button class="entry-type-btn active" id="typeExpenseBtn" onclick="setEntryType('expense')">💸 Expense</button>
+        <button class="entry-type-btn" id="typeIncomeBtn" onclick="setEntryType('income')">💰 Income</button>
+      </div>
+
       <h2 class="page-heading" id="formTitle">➕ Add Expense</h2>
 
       <div class="card form-card">
@@ -129,15 +215,28 @@
           <input type="number" id="amount" inputmode="decimal" placeholder="0.00" min="0" step="0.01"/>
         </div>
 
-        <label class="form-label-top">Category</label>
-        <div class="cat-grid" id="catGrid">
-          <button class="cat-btn" data-cat="Food"     onclick="selectCat(this)">🍔<span>Food</span></button>
-          <button class="cat-btn" data-cat="Travel"   onclick="selectCat(this)">✈️<span>Travel</span></button>
-          <button class="cat-btn" data-cat="Bills"    onclick="selectCat(this)">💡<span>Bills</span></button>
-          <button class="cat-btn" data-cat="Shopping" onclick="selectCat(this)">🛍️<span>Shopping</span></button>
-          <button class="cat-btn" data-cat="Other"    onclick="selectCat(this)">📦<span>Other</span></button>
+        <!-- Category (shown for expense) -->
+        <div id="catSection">
+          <label class="form-label-top">Category</label>
+          <div class="cat-grid" id="catGrid"></div>
+          <input type="hidden" id="category"/>
+          <button class="add-custom-cat-btn" onclick="openCatModal()">+ Custom Category</button>
         </div>
-        <input type="hidden" id="category"/>
+
+        <!-- Income Source (shown for income) -->
+        <div id="incomeSection" style="display:none">
+          <div class="form-group">
+            <label>Income Source</label>
+            <select id="incomeSource">
+              <option value="Salary">💼 Salary</option>
+              <option value="Freelance">💻 Freelance</option>
+              <option value="Business">🏢 Business</option>
+              <option value="Investment">📈 Investment</option>
+              <option value="Gift">🎁 Gift</option>
+              <option value="Other">📦 Other</option>
+            </select>
+          </div>
+        </div>
 
         <div class="form-group" style="margin-top:16px">
           <label for="date">Date</label>
@@ -148,8 +247,20 @@
           <input type="text" id="note" placeholder="What was this for?" maxlength="80"/>
         </div>
 
+        <!-- Tags -->
+        <div class="form-group" id="tagsSection">
+          <label>Tags (optional)</label>
+          <div class="tags-row" id="tagsRow">
+            <button class="tag-pill" onclick="toggleTag(this,'EMI')">EMI</button>
+            <button class="tag-pill" onclick="toggleTag(this,'Urgent')">Urgent</button>
+            <button class="tag-pill" onclick="toggleTag(this,'Optional')">Optional</button>
+            <button class="tag-pill" onclick="toggleTag(this,'Work')">Work</button>
+            <button class="tag-pill" onclick="toggleTag(this,'Personal')">Personal</button>
+          </div>
+        </div>
+
         <!-- Recurring -->
-        <div class="recurring-row">
+        <div class="recurring-row" id="recurringToggleRow">
           <label class="toggle-label">
             <input type="checkbox" id="isRecurring" onchange="toggleRecurringFreq()"/>
             <span class="toggle-track"><span class="toggle-thumb"></span></span>
@@ -171,36 +282,65 @@
     <!-- ========== PAGE: EXPENSES ========== -->
     <section class="page" id="pageExpenses">
 
-      <h2 class="page-heading">All Expenses</h2>
+      <!-- Sub tabs: Expenses / Income -->
+      <div class="sub-tab-row">
+        <button class="sub-tab active" id="subExpTab" onclick="switchExpTab('expenses')">💸 Expenses</button>
+        <button class="sub-tab" id="subIncTab" onclick="switchExpTab('income')">💰 Income</button>
+      </div>
 
-      <!-- Filters -->
-      <div class="filter-card card">
-        <input type="text" id="searchInput" class="search-input" placeholder="🔍 Search note or category…" oninput="renderTable()"/>
-        <div class="filter-row">
-          <select id="filterCategory" onchange="renderTable()">
-            <option value="All">All Categories</option>
-            <option value="Food">🍔 Food</option>
-            <option value="Travel">✈️ Travel</option>
-            <option value="Bills">💡 Bills</option>
-            <option value="Shopping">🛍️ Shopping</option>
-            <option value="Other">📦 Other</option>
-          </select>
+      <!-- Expense section -->
+      <div id="expensesSection">
+        <div class="filter-card card">
+          <input type="text" id="searchInput" class="search-input" placeholder="🔍 Search note or category…" oninput="renderTable()"/>
+          <div class="filter-row">
+            <select id="filterCategory" onchange="renderTable()">
+              <option value="All">All Categories</option>
+            </select>
+          </div>
+          <div class="filter-row date-filter-row">
+            <input type="date" id="filterFrom" onchange="renderTable()"/>
+            <span class="filter-sep">→</span>
+            <input type="date" id="filterTo" onchange="renderTable()"/>
+            <button class="clear-btn" onclick="clearDateFilter()">✕</button>
+          </div>
         </div>
-        <div class="filter-row date-filter-row">
-          <input type="date" id="filterFrom" placeholder="From" onchange="renderTable()"/>
-          <span class="filter-sep">→</span>
-          <input type="date" id="filterTo" placeholder="To" onchange="renderTable()"/>
-          <button class="clear-btn" onclick="clearDateFilter()">✕</button>
+        <div id="expenseList"></div>
+        <div class="empty-state" id="emptyState">
+          <span class="empty-icon">🧾</span>
+          <p>No expenses found.</p>
         </div>
       </div>
 
-      <!-- Expense List (mobile-friendly cards instead of table) -->
-      <div id="expenseList"></div>
-      <div class="empty-state" id="emptyState">
-        <span class="empty-icon">🧾</span>
-        <p>No expenses found.</p>
+      <!-- Income section -->
+      <div id="incomeSection2" style="display:none">
+        <div class="income-summary-bar" id="incomeSummaryBar"></div>
+        <div id="incomeList"></div>
+        <div class="empty-state" id="incomeEmptyState">
+          <span class="empty-icon">💰</span>
+          <p>No income records yet.</p>
+        </div>
       </div>
 
+    </section>
+
+    <!-- ========== PAGE: CALENDAR ========== -->
+    <section class="page" id="pageCalendar">
+      <h2 class="page-heading">📅 Calendar</h2>
+      <div class="card calendar-card">
+        <div class="cal-nav">
+          <button class="cal-nav-btn" onclick="changeCalMonth(-1)">◀</button>
+          <span class="cal-month-label" id="calMonthLabel"></span>
+          <button class="cal-nav-btn" onclick="changeCalMonth(1)">▶</button>
+        </div>
+        <div class="cal-grid" id="calGrid"></div>
+      </div>
+      <div class="card" id="calDayDetail" style="display:none">
+        <div class="card-title-row">
+          <span class="card-label" id="calDayTitle">Day Detail</span>
+          <span class="cal-day-total" id="calDayTotal"></span>
+        </div>
+        <div id="calDayList"></div>
+      </div>
     </section>
 
     <!-- ========== PAGE: GOALS ========== -->
@@ -221,13 +361,19 @@
         <div class="goal-result" id="goalResult" style="display:none"></div>
       </div>
 
+      <!-- Insights card -->
+      <div class="card" id="insightsCard">
+        <span class="card-label">💡 Smart Insights</span>
+        <div id="insightsList" style="margin-top:12px"></div>
+      </div>
+
     </section>
 
   </main>
 
   <!-- ===== BOTTOM NAV ===== -->
   <nav class="bottom-nav">
-    <button class="nav-btn active" id="nav-home"     onclick="showPage('Home')">
+    <button class="nav-btn active" id="nav-home" onclick="showPage('Home')">
       <span class="nav-icon">🏠</span>
       <span class="nav-label">Home</span>
     </button>
@@ -238,6 +384,10 @@
     <button class="nav-btn" id="nav-expenses" onclick="showPage('Expenses')">
       <span class="nav-icon">📋</span>
       <span class="nav-label">Expenses</span>
+    </button>
+    <button class="nav-btn" id="nav-calendar" onclick="showPage('Calendar')">
+      <span class="nav-icon">📅</span>
+      <span class="nav-label">Calendar</span>
     </button>
     <button class="nav-btn" id="nav-goals" onclick="showPage('Goals')">
       <span class="nav-icon">🎯</span>
