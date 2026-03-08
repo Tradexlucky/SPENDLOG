@@ -367,6 +367,57 @@
         <div id="insightsList" style="margin-top:12px"></div>
       </div>
 
+      <!-- Settings / Data Management -->
+      <div class="card settings-card">
+        <span class="card-label">⚙️ Settings & Data</span>
+        <div class="settings-list">
+
+          <div class="settings-item">
+            <div class="settings-info">
+              <span class="settings-title">👤 Your Profile</span>
+              <span class="settings-sub" id="profileNameDisplay">Not set</span>
+            </div>
+            <button class="settings-btn" onclick="openProfileEdit()">Edit</button>
+          </div>
+
+          <div class="settings-item">
+            <div class="settings-info">
+              <span class="settings-title">📤 Export Data</span>
+              <span class="settings-sub">CSV file download</span>
+            </div>
+            <button class="settings-btn" onclick="exportCSV()">Export</button>
+          </div>
+
+          <div class="settings-item">
+            <div class="settings-info">
+              <span class="settings-title">📥 Backup JSON</span>
+              <span class="settings-sub">Full data backup</span>
+            </div>
+            <button class="settings-btn" onclick="exportBackup()">Backup</button>
+          </div>
+
+          <div class="settings-item">
+            <div class="settings-info">
+              <span class="settings-title">📂 Restore Backup</span>
+              <span class="settings-sub">JSON file restore</span>
+            </div>
+            <label class="settings-btn" style="cursor:pointer">
+              Restore
+              <input type="file" accept=".json" onchange="importBackup(this)" style="display:none"/>
+            </label>
+          </div>
+
+          <div class="settings-item danger-item">
+            <div class="settings-info">
+              <span class="settings-title">🗑️ Clear All Data</span>
+              <span class="settings-sub">सगळा data delete होईल</span>
+            </div>
+            <button class="settings-btn danger-btn" onclick="clearAllData()">Clear</button>
+          </div>
+
+        </div>
+      </div>
+
     </section>
 
   </main>
