@@ -284,7 +284,7 @@ function showPage(name) {
   if (name === 'Expenses') renderTable();
   if (name === 'Home')     refresh();
   if (name === 'Calendar') renderCalendar();
-  if (name === 'Goals')    renderInsights();
+  if (name === 'Goals')    { renderInsights(); updateProfileDisplay(); }
 }
 
 // ==================== REFRESH ====================
@@ -373,6 +373,13 @@ function renderCatGrid() {
       <span>${c.name}</span>
     </button>
   `).join('');
+}
+
+function selectCat(btn) {
+  document.querySelectorAll(".cat-btn").forEach(b => b.classList.remove("selected"));
+  btn.classList.add("selected");
+  selectedCat = btn.dataset.cat;
+  document.getElementById("category").value = selectedCat;
 }
 
 function populateCatFilter() {
@@ -1095,4 +1102,89 @@ function exportPDF() {
   <script>window.onload=()=>window.print()<\/script></body></html>`);
   w.document.close();
   toast('PDF opening 🖨️', 'success');
+}
+
+// ==================== DATA MANAGEMENT ====================
+
+function clearAllData() {
+  const confirmed = confirm(
+    '⚠️ सगळा data DELETE होईल!\n\n' +
+    '• सगळे expenses\n• सगळे income records\n• Budget & Goals\n• Custom categories\n\n' +
+    'हे action UNDO होत नाही. खात्री आहे?'
+  );
+  if (!confirmed) return;
+
+  const doubleConfirm = confirm('शेवटची खात्री — "OK" दाबल्यावर सगळं delete होईल.');
+  if (!doubleConfirm) return;
+
+  // सगळे SpendLog keys clear करा
+  const keys = ['sl_expenses','sl_incomes','sl_recurring','sl_budget','sl_goal','sl_profile','sl_customCats','sl_theme'];
+  keys.forEach(k => localStorage.removeItem(k));
+
+  toast('सगळा data clear झाला 🗑️', 'info');
+  setTimeout(() => location.reload(), 1200);
+}
+
+function exportBackup() {
+  const backup = {
+    version: 2,
+    exportedAt: new Date().toISOString(),
+    expenses,
+    incomes,
+    recurring,
+    budget,
+    goal,
+    profile,
+    customCats
+  };
+  const a    = document.createElement('a');
+  a.href     = URL.createObjectURL(new Blob([JSON.stringify(backup, null, 2)], {type:'application/json'}));
+  a.download = `spendlog_backup_${todayStr()}.json`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+  toast('Backup downloaded 📥', 'success');
+}
+
+function importBackup(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const data = JSON.parse(e.target.result);
+      if (!data.expenses && !data.incomes) {
+        toast('Invalid backup file ⚠️', 'error'); return;
+      }
+      const ok = confirm(
+        `Backup मिळाला!\n\n` +
+        `• Expenses: ${(data.expenses||[]).length}\n` +
+        `• Income: ${(data.incomes||[]).length}\n` +
+        `• Export date: ${data.exportedAt ? new Date(data.exportedAt).toLocaleDateString() : 'Unknown'}\n\n` +
+        `हे restore केल्यावर current data replace होईल. Continue?`
+      );
+      if (!ok) return;
+
+      if (data.expenses)   localStorage.setItem('sl_expenses',   JSON.stringify(data.expenses));
+      if (data.incomes)    localStorage.setItem('sl_incomes',    JSON.stringify(data.incomes));
+      if (data.recurring)  localStorage.setItem('sl_recurring',  JSON.stringify(data.recurring));
+      if (data.budget)     localStorage.setItem('sl_budget',     data.budget);
+      if (data.goal)       localStorage.setItem('sl_goal',       JSON.stringify(data.goal));
+      if (data.profile)    localStorage.setItem('sl_profile',    JSON.stringify(data.profile));
+      if (data.customCats) localStorage.setItem('sl_customCats', JSON.stringify(data.customCats));
+
+      toast('Backup restored ✅', 'success');
+      setTimeout(() => location.reload(), 1200);
+    } catch(err) {
+      toast('File read error ⚠️', 'error');
+    }
+  };
+  reader.readAsText(file);
+  input.value = '';
+}
+
+function updateProfileDisplay() {
+  const el = document.getElementById('profileNameDisplay');
+  if (el && profile) {
+    el.textContent = (profile.migrated || profile.name === 'User') ? 'Not set' : profile.name;
+  }
 }
